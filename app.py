@@ -1,15 +1,22 @@
 from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 import os
-from pymongo import MongoClient  # type: ignore[reportMissingImports]
+from pymongo import MongoClient
 
 
+# Load environment variables from .env
 load_dotenv()
 
 app = Flask(__name__)
 
+
 # MongoDB connection
-client = MongoClient(os.getenv("MONGODB_URI"))
+mongodb_uri = os.getenv("MONGODB_URI")
+
+if not mongodb_uri:
+    raise ValueError("MONGODB_URI environment variable is not set")
+
+client = MongoClient(mongodb_uri)
 
 db = client[os.getenv("MONGODB_DB", "my_db")]
 users_collection = db["users"]
@@ -40,7 +47,9 @@ def add_user():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "JSON data is required"}), 400
+        return jsonify({
+            "error": "JSON data is required"
+        }), 400
 
     required_fields = ["name", "email", "age"]
 
@@ -58,5 +67,7 @@ def add_user():
     }), 201
 
 
+# Run locally
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
